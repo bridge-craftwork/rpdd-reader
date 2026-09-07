@@ -100,7 +100,13 @@ fn assert_run(zrd: &[u8], expected: &[u64]) {
         expected.len() * RECORD_LEN,
         "the run is the wrong length"
     );
-    for (i, (record, deal)) in zrd.chunks_exact(RECORD_LEN).zip(expected).enumerate() {
+    for (i, (record, deal)) in zrd
+        .as_chunks::<RECORD_LEN>()
+        .0
+        .iter()
+        .zip(expected)
+        .enumerate()
+    {
         assert_eq!(
             &record[..DEAL_LEN],
             &deal_at(*deal)[..],

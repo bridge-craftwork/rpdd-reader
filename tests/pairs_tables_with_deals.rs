@@ -28,7 +28,7 @@ fn every_record_is_its_own_deal_and_its_own_table() {
     let zrd = pair(&given, FIRST).expect("a run pairs");
     assert_eq!(zrd.len(), COUNT * RECORD_LEN);
 
-    for (i, record) in zrd.chunks_exact(RECORD_LEN).enumerate() {
+    for (i, record) in zrd.as_chunks::<RECORD_LEN>().0.iter().enumerate() {
         assert_eq!(
             &record[..DEAL_LEN],
             &deal_at(FIRST + i as u64)[..],

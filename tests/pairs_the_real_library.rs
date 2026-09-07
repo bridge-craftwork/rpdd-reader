@@ -54,7 +54,9 @@ fn records_at(file: &mut File, first: u64, count: usize) -> Vec<u8> {
 /// The table halves of those records, which is exactly what a `.zdd` holds.
 fn tables_of(records: &[u8]) -> Vec<u8> {
     records
-        .chunks_exact(RECORD_LEN)
+        .as_chunks::<RECORD_LEN>()
+        .0
+        .iter()
         .flat_map(|record| record[DEAL_LEN..].iter().copied())
         .collect()
 }
@@ -84,8 +86,10 @@ fn a_whole_chunk_is_the_librarys_own_records() {
     // the first differing record and say which deal it is: an off-by-one shows
     // up at the very first one, and saying so is the whole point of the test.
     for (i, (got, want)) in paired
-        .chunks_exact(RECORD_LEN)
-        .zip(expected.chunks_exact(RECORD_LEN))
+        .as_chunks::<RECORD_LEN>()
+        .0
+        .iter()
+        .zip(expected.as_chunks::<RECORD_LEN>().0)
         .enumerate()
     {
         assert_eq!(

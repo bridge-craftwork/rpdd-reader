@@ -147,7 +147,12 @@ pub fn pair(tables: &[u8], first_deal_index: u64) -> Result<Vec<u8>, PairError> 
     let mut out = Vec::with_capacity(tables.len() / TABLE_LEN * RECORD_LEN);
     // `Deals` never ends, so `zip` is what bounds the loop: exactly one deal
     // per table, and the deal index is `first_deal_index + offset` throughout.
-    let paired = Deals::from(first_deal_index).zip(tables.chunks_exact(TABLE_LEN));
+    // `as_chunks` rather than `chunks_exact`: the size is a constant, so the
+    // slices become fixed-size arrays and `read_zdd_table`'s length check
+    // becomes a compile-time fact. The remainder is empty — that was the
+    // `Ragged` check above.
+    let (whole, _) = tables.as_chunks::<TABLE_LEN>();
+    let paired = Deals::from(first_deal_index).zip(whole);
     for (offset, (packed, table_bytes)) in paired.enumerate() {
         let deal_index = first_deal_index + offset as u64;
         let named = |message: String| PairError::Record {
