@@ -1,4 +1,13 @@
-# rpdd
+# rpdd-reader
+
+Reads Richard Pavlicek's public library of 10,485,760 solved bridge deals —
+both the single 241 MB file and the chunked form a browser can fetch.
+
+**A reader, not a producer.** Nothing here creates deals: all 10,485,760 of them
+already exist as a fixed, public corpus. What this does is recover them from a
+compact encoding, which is decompression rather than generation. If anyone ever
+wants to *construct* a new corpus in the same format, that is a different crate
+and the name is still free.
 
 Richard Pavlicek's 10,485,760 solved bridge deals are two things, and only one
 of them is data. The double-dummy tables took him almost two years of computer
@@ -9,7 +18,7 @@ time. The deals they belong to are a pure function of their index, and his own
 out. No dependencies, no data, no I/O.
 
 ```rust
-use rpdd::Deals;
+use rpdd_reader::Deals;
 
 // Anywhere in the library, without generating what comes before it.
 for packed in Deals::from(4_096_000).take(1000) {

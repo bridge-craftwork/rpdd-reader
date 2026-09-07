@@ -1,9 +1,9 @@
 THIRD-PARTY NOTICES
 ===================
 
-For the rpdd crate.
+For the rpdd-reader crate.
 
-rpdd is dedicated to the public domain under the Unlicense; see
+rpdd-reader is dedicated to the public domain under the Unlicense; see
 LICENSE, and the README for what the generator derives from. Where a
 project distributes other people's code as well as its own, their
 licences ask that their copyright notices travel with copies, and a

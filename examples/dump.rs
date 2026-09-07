@@ -21,17 +21,17 @@ fn main() -> ExitCode {
         eprintln!("usage: dump <first-deal-index> <how-many>");
         return ExitCode::FAILURE;
     };
-    if start.saturating_add(count as u64) > rpdd::LIBRARY_DEALS {
+    if start.saturating_add(count as u64) > rpdd_reader::LIBRARY_DEALS {
         eprintln!(
             "the library holds {} deals; {start}+{count} runs past its end",
-            rpdd::LIBRARY_DEALS
+            rpdd_reader::LIBRARY_DEALS
         );
         return ExitCode::FAILURE;
     }
 
     let stdout = std::io::stdout();
     let mut out = BufWriter::new(stdout.lock());
-    for packed in rpdd::Deals::from(start).take(count) {
+    for packed in rpdd_reader::Deals::from(start).take(count) {
         if let Err(e) = out.write_all(&packed) {
             eprintln!("writing deals: {e}");
             return ExitCode::FAILURE;

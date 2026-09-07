@@ -126,7 +126,7 @@ const STARTS: [(u64, usize); 8] = [
     (1_048_576, 150_000),
     (4_096_000, 150_000),
     (8_192_000, 150_000),
-    (rpdd::LIBRARY_DEALS - 200_000, 150_000),
+    (rpdd_reader::LIBRARY_DEALS - 200_000, 150_000),
 ];
 
 #[test]
@@ -135,7 +135,7 @@ fn the_narrow_arithmetic_deals_what_the_wide_arithmetic_did() {
     let mut checked = 0usize;
     for (start, count) in STARTS {
         let wide = reference::deals_from(start).take(count);
-        let narrow = rpdd::Deals::from(start).take(count);
+        let narrow = rpdd_reader::Deals::from(start).take(count);
         for (i, (a, b)) in wide.zip(narrow).enumerate() {
             assert_eq!(a, b, "deal {} differs", start + i as u64);
             checked += 1;
@@ -143,12 +143,12 @@ fn the_narrow_arithmetic_deals_what_the_wide_arithmetic_did() {
     }
 
     // And the last deal in the library, reached by seeking rather than walking.
-    let last = rpdd::LIBRARY_DEALS - 1;
+    let last = rpdd_reader::LIBRARY_DEALS - 1;
     let mut rng = reference::Rng::default();
     for index in (last - last % 16_384)..last {
         reference::deal(&mut rng, index);
     }
-    assert_eq!(reference::deal(&mut rng, last), rpdd::deal_at(last));
+    assert_eq!(reference::deal(&mut rng, last), rpdd_reader::deal_at(last));
     checked += 1;
 
     assert_eq!(checked, 1_350_001, "fewer deals compared than intended");

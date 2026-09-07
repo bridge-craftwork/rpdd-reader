@@ -24,7 +24,7 @@
 //! has natively.
 //!
 //! ```
-//! use rpdd::Deals;
+//! use rpdd_reader::Deals;
 //!
 //! // Anywhere in the library, without generating what comes before it.
 //! let mut deals = Deals::from(4_096_000);

@@ -1,9 +1,9 @@
 [package]
-name = "rpdd"
+name = "rpdd-reader"
 version = "0.1.0"
 edition = "2021"
-description = "Reproduces the deals of Richard Pavlicek's solved-deal library from their index"
-repository = "https://github.com/bridge-craftwork/rpdd"
+description = "Reads Richard Pavlicek's public library of 10,485,760 solved bridge deals: deals by index, with their double-dummy tables"
+repository = "https://github.com/bridge-craftwork/rpdd-reader"
 license = "Unlicense"
 keywords = ["bridge", "cards", "deal"]
 categories = ["games"]

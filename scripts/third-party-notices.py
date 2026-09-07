@@ -25,11 +25,11 @@ ROOT = Path(__file__).resolve().parent.parent
 # script came from, there is no second graph: no CLI, no WebAssembly wrapper,
 # one crate.
 TARGETS = [
-    (ROOT, "rpdd", ROOT / "THIRD-PARTY-NOTICES", "the rpdd crate"),
+    (ROOT, "rpdd-reader", ROOT / "THIRD-PARTY-NOTICES", "the rpdd-reader crate"),
 ]
 
 # Crates of this project, under this project's own licence. Not third party.
-OURS = {"rpdd"}
+OURS = {"rpdd-reader"}
 
 LICENCE_FILE = re.compile(r"^(LICEN[CS]E|COPYING|NOTICE)", re.I)
 COPYRIGHT = re.compile(r"^\s*(Copyright\b.*)$", re.M)
@@ -153,7 +153,7 @@ def render(packages, what, carried=(), dev=()):
         "",
         f"For {what}.",
         "",
-        "rpdd is dedicated to the public domain under the Unlicense; see",
+        "rpdd-reader is dedicated to the public domain under the Unlicense; see",
         "LICENSE, and the README for what the generator derives from. Where a",
         "project distributes other people's code as well as its own, their",
         "licences ask that their copyright notices travel with copies, and a",

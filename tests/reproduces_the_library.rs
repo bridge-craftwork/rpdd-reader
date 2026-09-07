@@ -30,7 +30,7 @@ fn every_recorded_group_matches_the_library() {
         let expected = group["sha256"].as_str().expect("sha256");
 
         let mut hasher = Sha256::new();
-        for packed in rpdd::Deals::from(first).take(count as usize) {
+        for packed in rpdd_reader::Deals::from(first).take(count as usize) {
             hasher.update(packed);
         }
         let got = hex::encode(hasher.finalize());
@@ -50,10 +50,10 @@ fn a_deal_is_the_same_however_it_was_reached() {
     // and by seeking straight to it.
     const TARGET: u64 = 16_384 + 9_001;
 
-    let walked = rpdd::Deals::from(16_384)
+    let walked = rpdd_reader::Deals::from(16_384)
         .nth(9_001)
         .expect("Deals never ends");
-    let sought = rpdd::deal_at(TARGET);
+    let sought = rpdd_reader::deal_at(TARGET);
 
     assert_eq!(walked, sought, "seeking changed the deal");
 }
@@ -61,9 +61,9 @@ fn a_deal_is_the_same_however_it_was_reached() {
 /// And a group boundary really is a boundary: starting there needs no catch-up.
 #[test]
 fn a_group_boundary_needs_nothing_before_it() {
-    let from_boundary = rpdd::deal_at(rpdd::SEED_GROUP * 250);
-    let from_further_back = rpdd::Deals::from(rpdd::SEED_GROUP * 249)
-        .nth(rpdd::SEED_GROUP as usize)
+    let from_boundary = rpdd_reader::deal_at(rpdd_reader::SEED_GROUP * 250);
+    let from_further_back = rpdd_reader::Deals::from(rpdd_reader::SEED_GROUP * 249)
+        .nth(rpdd_reader::SEED_GROUP as usize)
         .expect("Deals never ends");
     assert_eq!(from_boundary, from_further_back);
 }
