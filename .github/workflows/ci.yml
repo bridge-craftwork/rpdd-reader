@@ -22,17 +22,32 @@ jobs:
       - name: Clippy
         run: cargo clippy --all-targets -- -D warnings
 
+      # The chunk layer is behind a feature, so the default build never sees
+      # it. A lint or a compile error there would otherwise reach main.
+      - name: Clippy (all features)
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
       # Checks the generator against digests of the real library, which is what
       # catches a wrong constant. The self-consistency tests cannot: a mistyped
       # multiplier still produces legal deals.
       - name: Test
         run: cargo test
 
-      # Compares the narrow unranking against a u128 transcription of the
-      # generator over 1.35M deals. Ignored by default because it is slow in
-      # debug; it is the guard for anyone optimising the loop again.
-      - name: Cross-check the unranking
-        run: cargo test --release -- --ignored
+      # Same reason as the second clippy run: `tests/chunks_serve_a_range.rs`
+      # is `#![cfg(feature = "chunks")]` and silently compiles to nothing
+      # without it, so a default `cargo test` reports it as passing.
+      - name: Test (all features)
+        run: cargo test --all-features
+
+      # The ignored tests. Two kinds: the 1.35M-deal cross-check of the narrow
+      # unranking against a u128 transcription of it, ignored because it is
+      # slow in debug; and the byte-for-byte comparisons against the real
+      # 241MB rpdd.zrd, which is not committed anywhere and which those tests
+      # skip with a message when it is absent — as it is here. They are the
+      # only check that catches an off-by-one in a chunk's starting deal, so
+      # run them on a machine that has the file before trusting a change.
+      - name: Ignored tests (cross-check, and the real library if present)
+        run: cargo test --release --all-features -- --ignored
 
       # wasm is the main consumer — a browser pairing generated deals with
       # fetched tables — and it is the target that would notice first if
@@ -40,8 +55,15 @@ jobs:
       - name: Build for wasm32
         run: cargo build --release --target wasm32-unknown-unknown
 
+      # And with the chunk layer, which is the half a browser actually calls:
+      # it must reach for nothing wasm32 does not have, and in particular must
+      # not acquire a way to fetch, which would not compile there and would be
+      # the wrong design if it did.
+      - name: Build for wasm32 (all features)
+        run: cargo build --release --all-features --target wasm32-unknown-unknown
+
       # A notice file that has gone stale asserts something untrue about what a
-      # copy contains. This one currently says there is nothing to credit; if
-      # that stops being true, this step is what says so.
+      # copy contains. It used to say there was nothing to credit; the pairing
+      # and chunk layers changed that, and this step is what noticed.
       - name: Third-party notices
         run: scripts/third-party-notices.py --check

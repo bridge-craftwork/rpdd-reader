@@ -14,8 +14,11 @@ of them is data. The double-dummy tables took him almost two years of computer
 time. The deals they belong to are a pure function of their index, and his own
 `rpdd.zip` ships a 2,560-byte program that recreates them.
 
-**This crate is that function.** An index goes in, thirteen packed bytes come
-out. No dependencies, no data, no I/O.
+Three layers, separable on purpose.
+
+## 1. The generator: an index in, a deal out
+
+No dependencies, no data, no I/O.
 
 ```rust
 use rpdd_reader::Deals;
@@ -33,6 +36,84 @@ fast. It re-seeds every 16,384 deals, so an arbitrary starting position costs
 at most 16,383 deals of catch-up, about 10ms, rather than replaying from the
 beginning of the library.
 
+## 2. Pairing: tables joined to the deals they belong to
+
+A `.zdd` is double-dummy results and nothing else — ten bytes a record, no
+deals, no index, no header. What makes record *i* meaningful is knowing which
+deal it was solved for, and that is **not in the bytes**. So it is an argument.
+
+```rust
+use rpdd_reader::pair;
+
+// Any run of .zdd tables, and the index of the deal the first belongs to.
+let zrd = pair(&tables, 42 * 65_536)?;   // .zrd records: deal + its table
+```
+
+It works on any slice — the whole 105 MiB `rpdd.zdd`, one fetched chunk, or ten
+records cut out of the middle — and knows nothing about chunks.
+
+The output is `.zrd` bytes rather than a structure of our own, deliberately. It
+is a published format with an existing reader, so **the output can be compared
+byte for byte against the real `rpdd.zrd`** — the one check that catches an
+off-by-one in the starting index, an error that otherwise pairs every deal with
+its neighbour's table and produces entirely plausible wrong answers. A consumer
+also feeds it to code that already reads that format rather than growing a
+second path for it.
+
+Nothing here reimplements either format: the table is decoded by
+`bridge_encodings::zrd::read_zdd_table` and the record written by
+`write_record`.
+
+## 3. Chunks: "deals from index N", behind the `chunks` feature
+
+A browser cannot download 105 MiB of tables to look at five deals, so
+[rpdd-library] publishes them as pieces with a manifest. `Library` is the part
+that knows which piece holds a deal, where in it, how a run that crosses a
+boundary is stitched and how one past the end wraps to the start. A caller asks
+for deals and never computes a piece number, an offset or a wrap.
+
+**It never fetches, and cannot.** Fetching is asynchronous and this is
+synchronous Rust, so a "give me chunk 42" callback into the crate is not
+available. What is available is asking and being told:
+
+```rust
+use rpdd_reader::{Library, LibraryError, RPDD_MANIFEST};
+
+let mut library = Library::at(RPDD_MANIFEST);
+let zrd = loop {
+    match library.zrd(deal_index, count) {
+        Ok(bytes) => break bytes,
+        // The manifest on the first round, the chunks it names on the second.
+        Err(LibraryError::Needs(urls)) => for url in urls {
+            library.supply(&url, fetch(&url))?;    // the caller's problem
+        },
+        Err(other) => return Err(other.into()),
+    }
+};
+```
+
+One protocol for both rounds: the caller fetches URLs and hands back bytes and
+never learns which is which. The same loop serves a page using `fetch`, a test
+using `include_bytes!` and a command-line tool reading files.
+
+**The layout is data, not code.** `deals_per_chunk`, `record_bytes`,
+`total_deals` and every chunk's `file` and `first_deal` come from the manifest;
+none is a constant here. Our library happens to be 160 chunks of 65,536 deals,
+but that is a hosting decision rather than a property of Pavlicek's library.
+Point `Library::at` at a different manifest and it works. `RPDD_MANIFEST` is a
+constant a caller may pass, not a default the logic falls back on.
+
+```toml
+rpdd-reader = "0.1"                                        # 1 and 2
+rpdd-reader = { version = "0.1", features = ["chunks"] }   # and 3
+```
+
+Feature-gated because the manifest is JSON and the layers below it are not:
+someone with the whole file on disk needs the generator and the pairing and has
+nothing to fetch.
+
+[rpdd-library]: https://github.com/bridge-craftwork/rpdd-library
+
 ## What this is not
 
 **It carries no data.** The tables are 100 MiB that will never change again,
@@ -42,10 +123,13 @@ browser can fetch one of. This crate used to live there too; depending on it
 meant cloning 51MB packed to compile eighty lines of Rust, and the two have
 nothing to do with each other's release rhythm.
 
-So: **rpdd-library** is the tables, and how they were made. **rpdd** is the
-generator, and the account of where its constants came from. A consumer that
-wants deals paired with their double-dummy results needs both, and gets the
-data by fetching chunks rather than by cloning them.
+So: **rpdd-library** is the tables, and how they were made. **rpdd-reader** is
+the code that reads them, and the account of where its constants came from. A
+consumer that wants deals paired with their double-dummy results needs both,
+and gets the data by fetching chunks rather than by cloning them.
+
+**It performs no I/O.** Not a socket, not a file. It says what it needs and
+takes bytes; where those come from is the caller's.
 
 ## Attribution
 
@@ -98,13 +182,20 @@ them to test against would publish the very thing this crate exists to make
 unnecessary.
 
 ```bash
-cargo test                          # against the committed digests
-cargo test --release -- --ignored   # 1.35M deals against a naive u128 generator
+cargo test --all-features                       # digests, pairing, chunks
+cargo test --release --all-features -- --ignored  # and against the real file
 ```
 
-The ignored test is the guard for anyone optimising the unranking again: it
-holds the generator as it was before the arithmetic was narrowed and compares
-deal for deal from eight scattered starts, including the library's last group.
+The ignored tests need things not committed anywhere, and skip with a message
+rather than failing when they are absent:
+
+| | |
+|---|---|
+| `matches_the_u128_unranking.rs` | 1.35M deals against a naive `u128` transcription of the generator. The guard for anyone optimising the unranking again. |
+| `pairs_the_real_library.rs` | a paired chunk against the real `rpdd.zrd`, byte for byte, plus the whole ask/supply loop against the published chunks. **The only check that catches an off-by-one in a chunk's starting deal** — every other test stays green, because each record still holds a legal deal and a well-formed table, just its neighbour's. |
+
+The second needs an `rpdd.zrd`, found at `$RPDD_ZRD`, at the root of this
+checkout, or in a sibling checkout of rpdd-library.
 
 With a built `rpdd.zrd` present — Pavlicek's `rpdd.bat` produces one from his
 zip — the digests can be checked or re-recorded against the file itself:
