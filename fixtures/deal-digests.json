@@ -1,0 +1,37 @@
+{
+  "source": "rpdd.zrd, built from rpdd.zip, rpbridge.net, (c) 2007 Richard Pavlicek",
+  "whole_file_sha1": "a5e35bdbed32d2a1faa8d450216e529701284994",
+  "note": "SHA-256 of the concatenated 13-byte deal halves of one 16,384-deal seed group. The deals themselves are not published; the generator reproduces them.",
+  "groups": [
+    {
+      "group": 0,
+      "first_deal": 0,
+      "deals": 16384,
+      "sha256": "d50f1aa915a3640ca82e2b5f1b54cbc2227f2474888c82ac3e90dbe1a0c2f748"
+    },
+    {
+      "group": 1,
+      "first_deal": 16384,
+      "deals": 16384,
+      "sha256": "724cbf7190e4544c2a77b2898a48f0b1ac2b9da82efbce670483aca647ef7620"
+    },
+    {
+      "group": 250,
+      "first_deal": 4096000,
+      "deals": 16384,
+      "sha256": "44bcab879617984d223afab62613dab26f0cc3bd63b9b0be2418d62cc90e0d17"
+    },
+    {
+      "group": 500,
+      "first_deal": 8192000,
+      "deals": 16384,
+      "sha256": "eb550142f41ed84d434de8accf53b62c3414f246eea37a98e828ca1781da43a8"
+    },
+    {
+      "group": 639,
+      "first_deal": 10469376,
+      "deals": 16384,
+      "sha256": "11fb0d47519b029782c20ddb4efa7eb52c8c80a99c80e4d4a8ea2a10a1c189cb"
+    }
+  ]
+}

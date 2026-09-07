@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  crate:
+    name: rpdd
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Format
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      # Checks the generator against digests of the real library, which is what
+      # catches a wrong constant. The self-consistency tests cannot: a mistyped
+      # multiplier still produces legal deals.
+      - name: Test
+        run: cargo test
+
+      # Compares the narrow unranking against a u128 transcription of the
+      # generator over 1.35M deals. Ignored by default because it is slow in
+      # debug; it is the guard for anyone optimising the loop again.
+      - name: Cross-check the unranking
+        run: cargo test --release -- --ignored
+
+      # wasm is the main consumer — a browser pairing generated deals with
+      # fetched tables — and it is the target that would notice first if
+      # anything here reached for something it does not have.
+      - name: Build for wasm32
+        run: cargo build --release --target wasm32-unknown-unknown
+
+      # A notice file that has gone stale asserts something untrue about what a
+      # copy contains. This one currently says there is nothing to credit; if
+      # that stops being true, this step is what says so.
+      - name: Third-party notices
+        run: scripts/third-party-notices.py --check

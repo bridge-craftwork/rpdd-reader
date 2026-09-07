@@ -1,0 +1,10 @@
+target/
+Cargo.lock
+
+# Pavlicek's distribution, if a checkout of it is dropped here to re-record the
+# fixtures or run scripts/check-against-zrd.py. His files, not ours to publish.
+/rpdd.zip
+/rpdd.zdd
+/rpdd.zrd
+/xxdd.exe
+/rpdd.bat
