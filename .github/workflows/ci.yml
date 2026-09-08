@@ -49,21 +49,48 @@ jobs:
       - name: Ignored tests (cross-check, and the real library if present)
         run: cargo test --release --all-features -- --ignored
 
+      # `--lib`, not the whole crate. `src/bin/rpdd.rs` does compile for wasm32
+      # — std::fs is there, it just fails at runtime — so leaving it in would
+      # not fail the step, it would only make the step mean less: a green run
+      # would no longer be a statement about the library alone. The library is
+      # what a browser loads, and it is what these two steps are checking.
+      #
       # wasm is the main consumer — a browser pairing generated deals with
       # fetched tables — and it is the target that would notice first if
       # anything here reached for something it does not have.
       - name: Build for wasm32
-        run: cargo build --release --target wasm32-unknown-unknown
+        run: cargo build --release --lib --target wasm32-unknown-unknown
 
       # And with the chunk layer, which is the half a browser actually calls:
       # it must reach for nothing wasm32 does not have, and in particular must
       # not acquire a way to fetch, which would not compile there and would be
       # the wrong design if it did.
       - name: Build for wasm32 (all features)
-        run: cargo build --release --all-features --target wasm32-unknown-unknown
+        run: cargo build --release --lib --all-features --target wasm32-unknown-unknown
 
       # A notice file that has gone stale asserts something untrue about what a
       # copy contains. It used to say there was nothing to credit; the pairing
       # and chunk layers changed that, and this step is what noticed.
       - name: Third-party notices
         run: scripts/third-party-notices.py --check
+
+  # The CLI on the platforms it is released for. `crate` above already builds
+  # and tests everything on ubuntu, so these two are the gap: without them a
+  # Windows or macOS break is first noticed by the release workflow, at the
+  # point where a tag has already been pushed.
+  cli:
+    name: rpdd on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Test
+        run: cargo test --all-features
+
+      - name: Build the CLI
+        run: cargo build --release --locked --bin rpdd

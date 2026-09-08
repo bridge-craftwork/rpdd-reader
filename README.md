@@ -114,6 +114,33 @@ nothing to fetch.
 
 [rpdd-library]: https://github.com/bridge-craftwork/rpdd-library
 
+## The command line
+
+The same three layers as a binary, `rpdd`. Prebuilt for Linux, macOS and
+Windows on every [release]; or `cargo install rpdd-reader`.
+
+```bash
+# The generator on its own: packed deals, 13 bytes each.
+rpdd deals 4096000 16384 > deals.bin
+
+# Tables from a .zdd on disk, joined to the deals they belong to:
+# .zrd records, 23 bytes each.
+rpdd zrd 4096000 100 --zdd rpdd.zdd > out.zrd
+
+# A chunk does not start at deal 0, and must say where it does start.
+rpdd zrd 4096000 100 --zdd chunk-062.zdd --zdd-first-deal 4063232 > out.zrd
+```
+
+Both write binary to standard output, so both want a file or a pipe. `zrd`
+seeks to the records it needs rather than reading the file, so asking a 105 MiB
+`rpdd.zdd` for a hundred deals costs a hundred deals.
+
+**There is no `fetch` subcommand.** The crate performs no I/O and the binary
+keeps that shape one level out: it pairs tables somebody already has. Getting
+them is [rpdd-library]'s business.
+
+[release]: https://github.com/bridge-craftwork/rpdd-reader/releases
+
 ## What this is not
 
 **It carries no data.** The tables are 100 MiB that will never change again,

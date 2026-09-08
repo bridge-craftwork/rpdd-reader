@@ -32,10 +32,10 @@ STARTS = (0, 16_384, 4_096_000, 8_192_000, 10_469_376)
 
 
 def deals_from_crate(start, count):
-    """The crate's deals, as raw bytes, via the `dump` example."""
+    """The crate's deals, as raw bytes, via the `rpdd deals` command."""
     built = subprocess.run(
-        ["cargo", "run", "--release", "--quiet", "--example", "dump",
-         "--", str(start), str(count)],
+        ["cargo", "run", "--release", "--quiet", "--bin", "rpdd",
+         "--", "deals", str(start), str(count)],
         cwd=ROOT, capture_output=True, check=True,
     )
     return built.stdout
