@@ -65,9 +65,24 @@ use crate::pairing::{pair, PairError, TABLE_LEN};
 /// [`Library::at`] takes a URL and this module never reaches for this one on
 /// its own.
 ///
+/// This is the repository's own Cloudflare Pages deployment rather than
+/// `raw.githubusercontent.com`, which is where it pointed first. Raw is a
+/// source host: no edge caching, so every reader pays the round trip to
+/// GitHub, and rate limits it was never meant to serve under. Measured from a
+/// browser, a run reading two 640 KiB pieces spent 2.4 seconds getting them
+/// against 0.05 running the script it wanted them for.
+///
+/// The Pages deployment also sets `Access-Control-Allow-Origin` and
+/// `Cross-Origin-Resource-Policy`, which a consumer under COEP `require-corp`
+/// — anything running threaded WebAssembly — needs in order to read the
+/// pieces at all.
+///
+/// Raw still serves the same bytes and always will. The manifest's chunk paths
+/// are relative, so either base resolves correctly and a mirror needs no
+/// change here.
+///
 /// [rpdd-library]: https://github.com/bridge-craftwork/rpdd-library
-pub const RPDD_MANIFEST: &str =
-    "https://raw.githubusercontent.com/bridge-craftwork/rpdd-library/main/data/manifest.json";
+pub const RPDD_MANIFEST: &str = "https://rpdd-library.pages.dev/manifest.json";
 
 /// The only manifest schema this version understands.
 ///
