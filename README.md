@@ -101,7 +101,11 @@ using `include_bytes!` and a command-line tool reading files.
 none is a constant here. Our library happens to be 160 chunks of 65,536 deals,
 but that is a hosting decision rather than a property of Pavlicek's library.
 Point `Library::at` at a different manifest and it works. `RPDD_MANIFEST` is a
-constant a caller may pass, not a default the logic falls back on.
+constant a caller may pass, not a default the logic falls back on. It names
+rpdd-library's own Cloudflare Pages deployment, which is on a CDN and sets the
+CORS and `Cross-Origin-Resource-Policy` headers a browser under COEP
+`require-corp` needs; the same bytes are still served from the repository over
+`raw.githubusercontent.com`, just slower and without those headers.
 
 ```toml
 rpdd-reader = "0.1"                                        # 1 and 2
