@@ -66,13 +66,16 @@ for packed in Deals::from(4_096_000).take(1000) {
 let zrd = pair(&tables, 4_096_000)?;
 ```
 
-About 640ns a deal, and the same in WebAssembly. It re-seeds every 16,384
-deals, so starting anywhere costs at most 16,383 deals of catch-up — about
-10ms — rather than replaying from the beginning.
+Upwards of a million deals a second, and the same in WebAssembly. It re-seeds
+every 16,384 deals, so starting anywhere in the library costs at most 16,383
+deals of catch-up — a few milliseconds — rather than replaying from the
+beginning.
 
 ## Use it as a command
 
-Prebuilt for Linux, macOS and Windows on every [release]; or
+Pavlicek ships `xxdd.exe` to recreate the deals, which is a Windows program.
+`rpdd` does the same job on all three desktops — prebuilt for Linux, macOS and
+Windows, x86_64 and arm64 alike, on every [release]. Or build it yourself with
 `cargo install --git https://github.com/bridge-craftwork/rpdd-reader`.
 
 ```bash
