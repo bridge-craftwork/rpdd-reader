@@ -31,7 +31,7 @@ jobs:
       # catches a wrong constant. The self-consistency tests cannot: a mistyped
       # multiplier still produces legal deals.
       - name: Test
-        run: cargo test
+        run: cargo test --locked
 
       # Same reason as the second clippy run: `tests/chunks_serve_a_range.rs`
       # is `#![cfg(feature = "chunks")]` and silently compiles to nothing
@@ -89,8 +89,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
 
+      # `--locked` on the *first* cargo call, which is what release.yml does and
+      # what this job exists to rehearse. Without it here, an uncommitted
+      # Cargo.lock is created by this step and silently found by the next, and
+      # the release workflow is the first thing to notice — after the tag.
       - name: Test
-        run: cargo test --all-features
+        run: cargo test --locked --all-features
 
       - name: Build the CLI
         run: cargo build --release --locked --bin rpdd
