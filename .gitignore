@@ -1,5 +1,10 @@
 target/
-Cargo.lock
+
+# Cargo.lock is committed, which a library would not normally do. This crate
+# ships a binary, and `bridge-encodings` is a git dependency with no version to
+# pin — so without the lock file, "the v0.1.0 binary" names whatever that
+# repository's tip happened to be on the morning it was built, and two builds
+# of one tag can differ. The lock is what makes a release reproducible.
 
 # Pavlicek's distribution, if a checkout of it is dropped here to re-record the
 # fixtures or run scripts/check-against-zrd.py. His files, not ours to publish.
