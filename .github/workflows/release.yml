@@ -1,0 +1,126 @@
+name: Release
+
+# A tag makes the binaries. Nothing else does: pushing to main builds and tests
+# the CLI (see ci.yml) but publishes nothing, so an accidental release takes a
+# deliberate `git tag`.
+on:
+  push:
+    tags: ["v*"]
+  # And by hand, for a tag that already exists — a failed runner, or binaries
+  # added to a release that was cut before this workflow did.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and attach binaries to"
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  VERSION: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # musl rather than gnu on Linux, so the binary is static and runs on
+          # a distro older than the runner. The crate and everything under it
+          # is pure Rust — no C to link — so this costs nothing but the target.
+          - { target: x86_64-unknown-linux-musl,  os: ubuntu-latest }
+          - { target: aarch64-unknown-linux-musl, os: ubuntu-24.04-arm }
+          # `macos-15-intel`, not `macos-13`: the Intel macOS 13 image was
+          # retired in December 2025. This label is GitHub's documented
+          # replacement and the last x86_64 macOS image there will be — it
+          # goes away in August 2027, and this entry goes with it.
+          - { target: x86_64-apple-darwin,        os: macos-15-intel }
+          - { target: aarch64-apple-darwin,       os: macos-latest }
+          - { target: x86_64-pc-windows-msvc,     os: windows-latest }
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.VERSION }}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: musl toolchain
+        if: endsWith(matrix.target, '-musl')
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      # Every target above is native to its runner, so the tests actually run
+      # rather than cross-compiling into something nothing executes. A tag that
+      # cannot pass its own tests on a platform should not ship a binary for it.
+      - name: Test
+        run: cargo test --release --locked --all-features --target ${{ matrix.target }}
+
+      # Default features: the CLI pairs tables it is handed and never fetches,
+      # so it has no manifest to parse and no reason to carry a JSON parser.
+      - name: Build
+        run: cargo build --release --locked --bin rpdd --target ${{ matrix.target }}
+
+      - name: Package
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          set -euo pipefail
+          staging="rpdd-$VERSION-${{ matrix.target }}"
+          mkdir "$staging"
+          cp "target/${{ matrix.target }}/release/rpdd" "$staging/"
+          cp README.md LICENSE THIRD-PARTY-NOTICES "$staging/"
+          tar czf "$staging.tar.gz" "$staging"
+          shasum -a 256 "$staging.tar.gz" > "$staging.tar.gz.sha256"
+
+      - name: Package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $staging = "rpdd-$env:VERSION-${{ matrix.target }}"
+          New-Item -ItemType Directory -Path $staging | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/rpdd.exe" $staging
+          Copy-Item README.md, LICENSE, THIRD-PARTY-NOTICES $staging
+          Compress-Archive -Path $staging -DestinationPath "$staging.zip"
+          $sum = (Get-FileHash "$staging.zip" -Algorithm SHA256).Hash.ToLower()
+          "$sum  $staging.zip" | Out-File -Encoding ascii "$staging.zip.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rpdd-${{ matrix.target }}
+          path: |
+            rpdd-*.tar.gz
+            rpdd-*.tar.gz.sha256
+            rpdd-*.zip
+            rpdd-*.zip.sha256
+          if-no-files-found: error
+
+  release:
+    name: Attach to the release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.VERSION }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      # Drafted rather than published, so a tag pushed by accident is one click
+      # away from being deleted instead of already on the releases page. Drop
+      # `--draft` below to publish as soon as the binaries are built.
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view "$VERSION" >/dev/null 2>&1 \
+            || gh release create "$VERSION" --draft --title "$VERSION" --generate-notes
+          gh release upload "$VERSION" dist/* --clobber
