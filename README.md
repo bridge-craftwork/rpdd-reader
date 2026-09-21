@@ -33,6 +33,9 @@ him.
 published behaviour — algorithms are not what copyright covers. It carries none
 of his data and does not redistribute `xxdd.exe`, which is his program rather
 than his data. Released into the public domain under the [Unlicense](LICENSE).
+The tables it fetches by default are mirrored in [rpdd-library] with his
+permission, on his conditions — free, ad-free, and credited to him — and those
+pass to anything built on them.
 
 ## What it provides
 
